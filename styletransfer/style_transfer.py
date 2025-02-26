@@ -4,10 +4,11 @@ from torchvision import models, transforms
 from PIL import Image
 import numpy as np
 import os
+import tqdm
 
 
 class StyleTransfer:
-    def __init__(self, content_weight=1, style_weight=1000000, num_steps=500):
+    def __init__(self, content_weight=1, style_weight=1000000, num_steps=5):
         self.content_weight = content_weight
         self.style_weight = style_weight
         self.num_steps = num_steps
@@ -61,7 +62,7 @@ class StyleTransfer:
         target = content_img.clone().requires_grad_(True)
         optimizer = torch.optim.LBFGS([target])
 
-        for step in range(self.num_steps):
+        for step in tqdm.tqdm(range(self.num_steps), desc="Running Style Transfer", ncols=100):
             def closure():
                 target.data.clamp_(0, 1)
                 optimizer.zero_grad()
@@ -80,13 +81,13 @@ class StyleTransfer:
                     style_loss += torch.nn.functional.mse_loss(target_gram, style_gram) / (c * h * w)
 
                 loss = content_loss + self.style_weight * style_loss
-                loss.backward()
-
+                loss.backward(retain_graph=True)
                 return loss
 
             optimizer.step(closure)
 
         return target
+
 
     def save_image(self, tensor, filename="styled_image.jpg"):
         """
