@@ -1,1 +1,5 @@
 django
+torch
+torchvision
+pillow
+numpy
