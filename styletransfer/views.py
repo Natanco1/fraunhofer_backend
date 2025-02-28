@@ -5,11 +5,16 @@ from django.views.decorators.csrf import csrf_exempt
 from io import BytesIO
 from PIL import Image
 import numpy as np
+import tensorflow as tf
 from .style_transfer import StyleTransfer
 
 def save_image_to_django_storage(image_tensor, output_filename):
-    image_tensor = image_tensor.numpy() * 255
-    image = Image.fromarray(image_tensor.astype(np.uint8).squeeze())
+    if isinstance(image_tensor, tf.Tensor):
+        image_tensor = image_tensor.numpy() * 255
+    if isinstance(image_tensor, Image.Image):
+        image = image_tensor
+    else:
+        image = Image.fromarray(image_tensor.astype(np.uint8).squeeze())
     
     image_bytes_io = BytesIO()
     image.save(image_bytes_io, format='JPEG')
@@ -31,11 +36,11 @@ def style_transfer_view(request):
         content_absolute_path = default_storage.path(content_path)
         style_absolute_path = default_storage.path(style_path)
 
-        style_transfer = StyleTransfer(content_absolute_path, style_absolute_path)
-        style_transfer.train(epochs=10)
+        style_transfer = StyleTransfer(img_size=400, vgg_weights_path='/home/natanco-brain/projects/fraunhofer/fraunhofer_backend/styletransfer/models/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
+        generated_image = style_transfer.train(content_absolute_path, style_absolute_path, epochs=1)
 
         output_filename = 'styled_image.jpg'
-        output_path = save_image_to_django_storage(style_transfer.generate_image(), output_filename)
+        output_path = save_image_to_django_storage(style_transfer.tensor_to_image(generated_image), output_filename)
 
         response = JsonResponse({'message': 'Style Transfer Successful', 'image_url': f'/media/{output_path}'})
         return response
