@@ -100,7 +100,7 @@ class StyleTransfer:
         a_S = self.vgg_model_outputs(style_image)
         for i in tqdm.tqdm(range(epochs), desc="Training Progress"):
             self.train_step(generated_image, a_C, a_S)
-            if i % 250 == 0:
+            if i % 10 == 0:
                 print(f"Epoch {i}")
                 image = self.tensor_to_image(generated_image)
                 image.save(f"{output_dir}/image_{i}.jpg")
