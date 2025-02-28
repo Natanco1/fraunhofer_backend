@@ -1,6 +1,7 @@
 django
-torch
-torchvision
+tensorflow
 pillow
 numpy
 tqdm
+scipy
+Matplotlib

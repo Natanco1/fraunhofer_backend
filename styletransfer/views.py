@@ -1,20 +1,15 @@
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from io import BytesIO
-from PIL import Image
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.core.files.storage import default_storage, FileSystemStorage
-from .style_transfer import StyleTransfer
+from io import BytesIO
+from PIL import Image
 import numpy as np
+from .style_transfer import StyleTransfer
 
 def save_image_to_django_storage(image_tensor, output_filename):
-    """
-    Save the generated image tensor to the Django storage system.
-    """
-    image_tensor = image_tensor.squeeze().cpu().detach().numpy()
-    image_tensor = np.moveaxis(image_tensor, 0, -1) * 255
-    image = Image.fromarray(image_tensor.astype(np.uint8))
+    image_tensor = image_tensor.numpy() * 255
+    image = Image.fromarray(image_tensor.astype(np.uint8).squeeze())
     
     image_bytes_io = BytesIO()
     image.save(image_bytes_io, format='JPEG')
@@ -36,15 +31,11 @@ def style_transfer_view(request):
         content_absolute_path = default_storage.path(content_path)
         style_absolute_path = default_storage.path(style_path)
 
-        style_transfer = StyleTransfer(content_weight=1, style_weight=1000000, num_steps=10)
-        content_img = style_transfer.preprocess_image(content_absolute_path)
-        style_img = style_transfer.preprocess_image(style_absolute_path)
-
-        output = style_transfer.run_style_transfer(content_img, style_img)
+        style_transfer = StyleTransfer(content_absolute_path, style_absolute_path)
+        style_transfer.train(epochs=10)
 
         output_filename = 'styled_image.jpg'
-
-        output_path = save_image_to_django_storage(output, output_filename)
+        output_path = save_image_to_django_storage(style_transfer.generate_image(), output_filename)
 
         response = JsonResponse({'message': 'Style Transfer Successful', 'image_url': f'/media/{output_path}'})
         return response
