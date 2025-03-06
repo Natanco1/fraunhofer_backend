@@ -7,7 +7,6 @@ from matplotlib.pyplot import imshow
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Layer
 import tqdm
 
 class StyleTransfer:

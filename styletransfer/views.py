@@ -36,7 +36,7 @@ def style_transfer_view(request):
         content_absolute_path = default_storage.path(content_path)
         style_absolute_path = default_storage.path(style_path)
 
-        style_transfer = StyleTransfer(img_size=400, vgg_weights_path='/home/nata/projects/personal/fraunhofer/fraunhofer_backend/styletransfer/models/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
+        style_transfer = StyleTransfer(img_size=400, vgg_weights_path='/home/natanco-brain/projects/fraunhofer/fraunhofer_backend/models/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
         generated_image = style_transfer.train(content_absolute_path, style_absolute_path, epochs=30)
 
         output_filename = 'styled_image.jpg'
