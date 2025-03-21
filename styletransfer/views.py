@@ -1,46 +1,40 @@
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
 from django.http import JsonResponse
+from django.core.files.storage import FileSystemStorage
+from django.utils.timezone import now
+import os
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from io import BytesIO
-from PIL import Image
-import numpy as np
-import tensorflow as tf
+
 from .style_transfer import StyleTransfer
-
-def save_image_to_django_storage(image_tensor, output_filename):
-    if isinstance(image_tensor, tf.Tensor):
-        image_tensor = image_tensor.numpy() * 255
-    if isinstance(image_tensor, Image.Image):
-        image = image_tensor
-    else:
-        image = Image.fromarray(image_tensor.astype(np.uint8).squeeze())
-    
-    image_bytes_io = BytesIO()
-    image.save(image_bytes_io, format='JPEG')
-    image_bytes_io.seek(0)
-
-    file_name = default_storage.save(output_filename, ContentFile(image_bytes_io.read()))
-    
-    return file_name
 
 @csrf_exempt
 def style_transfer_view(request):
-    if request.method == "POST":
-        content_file = request.FILES['content_image']
-        style_file = request.FILES['style_image']
+    if request.method == 'POST' and request.FILES.get('content_image') and request.FILES.get('style_image'):
+        content_image = request.FILES['content_image']
+        style_image = request.FILES['style_image']
 
-        content_path = default_storage.save('content.jpg', content_file)
-        style_path = default_storage.save('style.jpg', style_file)
+        folder_name = now().strftime("%Y-%m-%d_%H-%M-%S")
+        media_path = os.path.join(settings.MEDIA_ROOT, folder_name)
+        os.makedirs(media_path, exist_ok=True)
 
-        content_absolute_path = default_storage.path(content_path)
-        style_absolute_path = default_storage.path(style_path)
+        content_image_path = os.path.join(media_path, 'content_image.png')
+        style_image_path = os.path.join(media_path, 'style_image.png')
+        
+        fs = FileSystemStorage(location=media_path)
+        fs.save('content_image.png', content_image)
+        fs.save('style_image.png', style_image)
 
-        style_transfer = StyleTransfer(img_size=400, vgg_weights_path='/home/natanco-brain/projects/fraunhofer/fraunhofer_backend/models/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
-        generated_image = style_transfer.train(content_absolute_path, style_absolute_path, epochs=30)
+        style_transfer = StyleTransfer(content_weight=1e3, style_weight=1e2)
 
-        output_filename = 'styled_image.jpg'
-        output_path = save_image_to_django_storage(style_transfer.tensor_to_image(generated_image), output_filename)
+        result_image = style_transfer.transfer_style(content_image_path, style_image_path, num_iterations=50, learning_rate=1e-2)
 
-        response = JsonResponse({'message': 'Style Transfer Successful', 'image_url': f'/media/{output_path}'})
-        return response
+        result_image_path = os.path.join(media_path, 'style_transferred_image.png')
+        result_image.save(result_image_path)
+
+        return JsonResponse({
+            'content_image': content_image_path,
+            'style_image': style_image_path,
+            'style_transferred_image': result_image_path
+        })
+
+    return JsonResponse({'error': 'Please upload both content and style images.'}, status=400)
