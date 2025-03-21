@@ -1,13 +1,9 @@
-import os
-import sys
-import scipy.io
-import scipy.misc
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import imshow
-from PIL import Image
 import numpy as np
 import tensorflow as tf
+import os
 import tqdm
+from PIL import Image
+import matplotlib.pyplot as plt
 
 class StyleTransfer:
     def __init__(self, img_size=400, vgg_weights_path=None):
@@ -26,7 +22,7 @@ class StyleTransfer:
             ('block5_conv1', 0.2)
         ]
         self.content_layer = [('block5_conv4', 1)]
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.03)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=10e-3)  # match the notebook
         self.vgg_model_outputs = self.get_layer_outputs(self.vgg, self.STYLE_LAYERS + self.content_layer)
 
     def load_image(self, path):
@@ -85,6 +81,7 @@ class StyleTransfer:
             J_style = self.compute_style_cost(a_S, a_G)
             J_content = self.compute_content_cost(a_C, a_G)
             J = self.total_cost(J_content, J_style)  
+        
         grad = tape.gradient(J, generated_image)
         self.optimizer.apply_gradients([(grad, generated_image)])
         generated_image.assign(self.clip_0_1(generated_image))
@@ -94,16 +91,26 @@ class StyleTransfer:
         os.makedirs(output_dir, exist_ok=True)
         content_image = self.load_image(content_path)
         style_image = self.load_image(style_path)
+        
+        # Initial guess for the generated image: Start with content image
         generated_image = tf.Variable(tf.image.convert_image_dtype(content_image, tf.float32))
+        
+        # OPTIONAL: Add small random noise (not too much, just a little to break symmetry)
+        noise = tf.random.normal(tf.shape(generated_image), mean=0.0, stddev=0.05)
+        generated_image.assign(generated_image + noise)
+        
         a_C = self.vgg_model_outputs(content_image)
         a_S = self.vgg_model_outputs(style_image)
+        
         for i in tqdm.tqdm(range(epochs), desc="Training Progress"):
-            self.train_step(generated_image, a_C, a_S)
-            if i % 10 == 0:
-                print(f"Epoch {i}")
+            J = self.train_step(generated_image, a_C, a_S)
+            
+            # Print loss every 100 iterations
+            if i % 100 == 0:
+                print(f"Epoch {i} - Loss: {J}")
                 image = self.tensor_to_image(generated_image)
                 image.save(f"{output_dir}/image_{i}.jpg")
                 plt.imshow(image)
                 plt.show()
+        
         return generated_image
-
