@@ -11,7 +11,7 @@ import json
 import logging
 import uuid
 
-from styletransfer.query import collection
+from styletransfer.query import collection as col
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def style_transfer_view(request):
             result_image_base64 = base64.b64encode(f.read()).decode('utf-8')
 
         try:
-            collection.insert_collection_record(request_id)
+            col.insert_collection_record(request_id)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
@@ -82,3 +82,23 @@ def style_transfer_view(request):
         })
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+def get_all_collections_view(request):
+    """Handle GET requests to fetch all collection records."""
+    try:
+        collections = col.get_all_collections()
+
+        collections_data = []
+        for collection in collections:
+            collection_id, name, created_at, updated_at = collection
+            collections_data.append({
+                'id': collection_id,
+                'name': name,
+                'createdAt': created_at,
+                'updatedAt': updated_at
+            })
+
+        return JsonResponse({'collections': collections_data}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

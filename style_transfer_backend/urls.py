@@ -7,6 +7,7 @@ from styletransfer import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/style-transfer/', views.style_transfer_view, name='style_transfer'),
+    path('api/get-all/', views.get_all_collections_view, name='get_all'),
 ]
 
 if settings.DEBUG:

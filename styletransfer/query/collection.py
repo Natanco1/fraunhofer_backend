@@ -45,3 +45,23 @@ def get_collection_record_by_id(request_id):
     except sqlite3.Error as e:
         logger.error(f"Error fetching from collection table: {e}")
         raise Exception("Failed to retrieve data from the database.")
+
+def get_all_collections():
+    """Fetch all records from the collection table."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute(f'''
+            SELECT * FROM {table}
+        ''')
+
+        records = cursor.fetchall()
+        conn.close()
+
+        return records
+
+    except sqlite3.Error as e:
+        logger.error(f"Error fetching all from collection table: {e}")
+        raise Exception("Failed to retrieve data from the database.")
+
