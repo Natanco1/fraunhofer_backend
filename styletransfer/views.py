@@ -149,3 +149,27 @@ def get_collection_view(request, collection_id):
     except Exception as e:
         logger.error(f"Error fetching collection with ID {collection_id}: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def delete_collection_view(request, collection_id):
+    """Handle DELETE requests to delete a collection by ID, including its images."""
+    if request.method == 'DELETE':
+        try:
+            col.delete_collection_record(collection_id)
+
+            media_root = settings.MEDIA_ROOT
+            content_image_path = os.path.join(media_root, 'content', f'{collection_id}.png')
+            style_image_path = os.path.join(media_root, 'style', f'{collection_id}.png')
+            generated_image_path = os.path.join(media_root, 'generated', f'{collection_id}.png')
+
+            for image_path in [content_image_path, style_image_path, generated_image_path]:
+                if os.path.exists(image_path):
+                    os.remove(image_path)
+
+            return JsonResponse({'message': 'Collection and related images deleted successfully.'}, status=200)
+        except Exception as e:
+            logger.error(f"Error deleting collection with ID {collection_id}: {e}")
+            return JsonResponse({'error': 'Failed to delete collection and images.'}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method. Only DELETE is allowed.'}, status=405)
+

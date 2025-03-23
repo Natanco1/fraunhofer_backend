@@ -91,3 +91,20 @@ def update_collection_name(request_id, new_name):
     except sqlite3.Error as e:
         logger.error(f"Error updating collection name: {e}")
         raise Exception("Failed to update collection data in the database.")
+
+def delete_collection_record(collection_id):
+    """Delete a collection record from the database by ID."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute(f'''
+            DELETE FROM {table} WHERE id = ?
+        ''', (str(collection_id),))
+
+        conn.commit()
+        conn.close()
+
+    except sqlite3.Error as e:
+        logger.error(f"Error deleting collection with ID {collection_id}: {e}")
+        raise Exception("Failed to delete collection from the database.")
