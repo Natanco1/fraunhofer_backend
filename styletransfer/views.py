@@ -9,6 +9,7 @@ from PIL import Image
 from .style_transfer import StyleTransfer
 import json
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +39,21 @@ def style_transfer_view(request):
             logger.error(f"Error decoding images: {e}")
             return JsonResponse({'error': 'Failed to decode image data.'}, status=400)
 
-        folder_name = now().strftime("%Y-%m-%d_%H-%M-%S")
-        media_path = os.path.join(settings.MEDIA_ROOT, folder_name)
+        request_id = str(uuid.uuid4())
+
+        media_path = os.path.join(settings.MEDIA_ROOT)
         os.makedirs(media_path, exist_ok=True)
 
-        content_image_path = os.path.join(media_path, 'content_image.png')
-        style_image_path = os.path.join(media_path, 'style_image.png')
+        content_image_folder = os.path.join(media_path, 'content')
+        style_image_folder = os.path.join(media_path, 'style')
+        generated_image_folder = os.path.join(media_path, 'generated')
+
+        os.makedirs(content_image_folder, exist_ok=True)
+        os.makedirs(style_image_folder, exist_ok=True)
+        os.makedirs(generated_image_folder, exist_ok=True)
+
+        content_image_path = os.path.join(content_image_folder, f'{request_id}.png')
+        style_image_path = os.path.join(style_image_folder, f'{request_id}.png')
 
         content_image.save(content_image_path)
         style_image.save(style_image_path)
@@ -51,14 +61,17 @@ def style_transfer_view(request):
         style_transfer = StyleTransfer(content_image_path, style_image_path)
         stylized_image = style_transfer.transfer_style()
 
-        result_image_path = os.path.join(media_path, 'style_transferred_image.png')
+        result_image_path = os.path.join(generated_image_folder, f'{request_id}.png')
         stylized_image.save(result_image_path)
 
         with open(result_image_path, "rb") as f:
             result_image_base64 = base64.b64encode(f.read()).decode('utf-8')
 
         return JsonResponse({
-            'style_transferred_image': result_image_base64
+            'style_transferred_image': result_image_base64,
+            'content_image_url': os.path.join(settings.MEDIA_URL, request_id, 'content', f'{request_id}.png'),
+            'style_image_url': os.path.join(settings.MEDIA_URL, request_id, 'style', f'{request_id}.png'),
+            'generated_image_url': os.path.join(settings.MEDIA_URL, request_id, 'generated', f'{request_id}.png')
         })
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
