@@ -11,6 +11,8 @@ import json
 import logging
 import uuid
 
+from styletransfer.query import collection
+
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
@@ -67,11 +69,16 @@ def style_transfer_view(request):
         with open(result_image_path, "rb") as f:
             result_image_base64 = base64.b64encode(f.read()).decode('utf-8')
 
+        try:
+            collection.insert_collection_record(request_id)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
         return JsonResponse({
             'style_transferred_image': result_image_base64,
-            'content_image_url': os.path.join(settings.MEDIA_URL, request_id, 'content', f'{request_id}.png'),
-            'style_image_url': os.path.join(settings.MEDIA_URL, request_id, 'style', f'{request_id}.png'),
-            'generated_image_url': os.path.join(settings.MEDIA_URL, request_id, 'generated', f'{request_id}.png')
+            'content_image_url': os.path.join(settings.MEDIA_URL, 'content', f'{request_id}.png'),
+            'style_image_url': os.path.join(settings.MEDIA_URL, 'style', f'{request_id}.png'),
+            'generated_image_url': os.path.join(settings.MEDIA_URL, 'generated', f'{request_id}.png')
         })
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
