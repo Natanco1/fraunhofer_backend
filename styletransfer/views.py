@@ -104,3 +104,27 @@ def get_all_collections_view(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+
+@csrf_exempt
+def update_collection_view(request):
+    """Handle PUT requests to update collection name by id."""
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            collection_id = data.get('id')
+            new_name = data.get('name')
+
+            if not collection_id or not new_name:
+                return JsonResponse({'error': 'Collection ID and new name are required.'}, status=400)
+
+            col.update_collection_name(collection_id, new_name)
+
+            return JsonResponse({'message': 'Collection updated successfully.'}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)

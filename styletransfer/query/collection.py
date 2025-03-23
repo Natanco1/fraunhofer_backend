@@ -66,3 +66,21 @@ def get_all_collections():
         logger.error(f"Error fetching all from collection table: {e}")
         raise Exception("Failed to retrieve data from the database.")
 
+def update_collection_name(request_id, new_name):
+    """Update the name of a collection record by id."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute(f'''
+            UPDATE {table}
+            SET name = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (new_name, request_id))
+
+        conn.commit()
+        conn.close()
+
+    except sqlite3.Error as e:
+        logger.error(f"Error updating collection name: {e}")
+        raise Exception("Failed to update collection data in the database.")
