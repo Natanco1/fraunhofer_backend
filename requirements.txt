@@ -6,3 +6,4 @@ numpy
 tqdm
 scipy
 Matplotlib
+django-cors-headers
