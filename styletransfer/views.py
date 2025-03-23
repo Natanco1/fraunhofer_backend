@@ -27,6 +27,7 @@ def style_transfer_view(request):
 
         content_image_base64 = data.get('content_image')
         style_image_base64 = data.get('style_image')
+        collection_name = data.get('name')
 
         if not content_image_base64 or not style_image_base64:
             return JsonResponse({'error': 'Please upload both content and style images.'}, status=400)
@@ -70,7 +71,7 @@ def style_transfer_view(request):
             result_image_base64 = base64.b64encode(f.read()).decode('utf-8')
 
         try:
-            col.insert_collection_record(request_id)
+            col.insert_collection_record(request_id, collection_name)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
@@ -82,6 +83,7 @@ def style_transfer_view(request):
         })
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
 
 def get_all_collections_view(request):
     """Handle GET requests to fetch all collection records."""

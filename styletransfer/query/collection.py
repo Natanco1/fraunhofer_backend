@@ -9,8 +9,8 @@ DB_PATH = os.path.join(settings.BASE_DIR, 'local_db.sqlite')
 
 table = 'collection'
 
-def insert_collection_record(request_id):
-    """Insert a new record into the collection table."""
+def insert_collection_record(request_id, name=None):
+    """Insert a new record into the collection table with optional name."""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -18,7 +18,7 @@ def insert_collection_record(request_id):
         cursor.execute(f'''
             INSERT INTO {table} (id, name, createdAt, updatedAt)
             VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ''', (request_id, request_id))
+        ''', (request_id, name if name else request_id))
 
         conn.commit()
         conn.close()
@@ -26,6 +26,7 @@ def insert_collection_record(request_id):
     except sqlite3.Error as e:
         logger.error(f"Error inserting into collection table: {e}")
         raise Exception("Failed to insert data into the database.")
+
         
 def get_collection_record_by_id(request_id):
     """Fetch a record from the collection table by id."""
