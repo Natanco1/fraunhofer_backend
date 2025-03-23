@@ -128,3 +128,24 @@ def update_collection_view(request):
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+
+def get_collection_view(request, collection_id):
+    """Handle GET requests to fetch a single collection by its ID."""
+    try:
+        collection = col.get_collection_record_by_id(collection_id)
+        
+        if collection:
+            collection_data = {
+                'id': collection[0],
+                'name': collection[1],
+                'createdAt': collection[2],
+                'updatedAt': collection[3]
+            }
+            return JsonResponse({'collection': collection_data}, status=200)
+        else:
+            return JsonResponse({'error': 'Collection not found'}, status=404)
+
+    except Exception as e:
+        logger.error(f"Error fetching collection with ID {collection_id}: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

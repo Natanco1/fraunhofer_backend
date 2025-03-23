@@ -31,21 +31,28 @@ def insert_collection_record(request_id, name=None):
 def get_collection_record_by_id(request_id):
     """Fetch a record from the collection table by id."""
     try:
+        request_id_str = str(request_id)
+
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         cursor.execute(f'''
             SELECT * FROM {table} WHERE id = ?
-        ''', (request_id,))
+        ''', (request_id_str,))
         
         record = cursor.fetchone()
         conn.close()
 
-        return record
+        if record:
+            return record
+        else:
+            return None
 
     except sqlite3.Error as e:
-        logger.error(f"Error fetching from collection table: {e}")
+        logger.error(f"Error fetching collection with ID {request_id}: {e}")
         raise Exception("Failed to retrieve data from the database.")
+
+
 
 def get_all_collections():
     """Fetch all records from the collection table."""
