@@ -308,4 +308,3 @@ GitHub.sublime-settings
 !.vscode/extensions.json 
 .history
 models/
-*.sqlite
