@@ -10,9 +10,10 @@ urlpatterns = [
     path('api/get-all/', views.get_all_collections_view, name='get_all'),
     path('api/update-collection/', views.update_collection_view, name='update_collection'),
     path('api/get-collection/<uuid:collection_id>/', views.get_collection_view, name='get_collection'),
-    path('api/delete-collection/<uuid:collection_id>/', views.delete_collection_view, name='delete_collection'),
+    path('api/delete-collection/<uuid:collection_id>/', views.delete_collection_view, name='delete_collection'),    
+    path('api/download-all/', views.download_all_collections_view, name='download_all'),
+    path('api/delete-all/', views.delete_all_collections_view, name='delete_all'),
 ]
-
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -10,6 +10,8 @@ from .style_transfer import StyleTransfer
 import json
 import logging
 import uuid
+import zipfile
+from django.http import HttpResponse
 
 from styletransfer.query import collection as col
 
@@ -173,3 +175,61 @@ def delete_collection_view(request, collection_id):
     else:
         return JsonResponse({'error': 'Invalid request method. Only DELETE is allowed.'}, status=405)
 
+def download_all_collections_view(request):
+    """Handles the request to download all collections as a zip file."""
+    try:
+        collections = col.get_all_collections()
+
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            media_root = settings.MEDIA_ROOT
+            for collection in collections:
+                collection_id = collection[0]
+
+                content_image_path = os.path.join(media_root, 'content', f'{collection_id}.png')
+                style_image_path = os.path.join(media_root, 'style', f'{collection_id}.png')
+                generated_image_path = os.path.join(media_root, 'generated', f'{collection_id}.png')
+
+                if os.path.exists(content_image_path):
+                    zip_file.write(content_image_path, os.path.basename(content_image_path))
+                if os.path.exists(style_image_path):
+                    zip_file.write(style_image_path, os.path.basename(style_image_path))
+                if os.path.exists(generated_image_path):
+                    zip_file.write(generated_image_path, os.path.basename(generated_image_path))
+
+        zip_buffer.seek(0)
+
+        response = HttpResponse(zip_buffer.read(), content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename="all_collections.zip"'
+
+        return response
+    except Exception as e:
+        logger.error(f"Error downloading collections: {e}")
+        return JsonResponse({'error': 'Failed to download collections.'}, status=500)
+
+@csrf_exempt
+def delete_all_collections_view(request):
+    """Handles the request to delete all collections from the database and server."""
+    if request.method == 'DELETE':
+        try:
+            collections = col.get_all_collections()
+
+            for collection in collections:
+                collection_id = collection[0]
+                col.delete_collection_record(collection_id)
+
+                media_root = settings.MEDIA_ROOT
+                content_image_path = os.path.join(media_root, 'content', f'{collection_id}.png')
+                style_image_path = os.path.join(media_root, 'style', f'{collection_id}.png')
+                generated_image_path = os.path.join(media_root, 'generated', f'{collection_id}.png')
+
+                for image_path in [content_image_path, style_image_path, generated_image_path]:
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+
+            return JsonResponse({'message': 'All collections and related images deleted successfully.'}, status=200)
+        except Exception as e:
+            logger.error(f"Error deleting all collections: {e}")
+            return JsonResponse({'error': 'Failed to delete collections and related images.'}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method. Only DELETE is allowed.'}, status=405)
